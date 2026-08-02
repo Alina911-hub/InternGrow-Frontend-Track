@@ -1,3 +1,8 @@
+## 📌 InternGrow Tasks
+
+- **Task 1 — Resume Screening System:** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/resume-screener.html)
+- **Task 2 — AI Customer Support Chatbot:** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/task-2-chatbot/)
+
 # InternGrow — Intelligent Resume Screening System
 
 An AI-powered resume screening tool that automatically analyzes resumes, matches them against a job description, and ranks candidates — all running client-side in the browser, no backend required.
