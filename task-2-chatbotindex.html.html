@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loomlight Support — AI Chatbot (InternGrow Task 2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12141c;
+    --surface:#1b1f2c;
+    --surface-2:#232a3d;
+    --line:#2c3346;
+    --accent:#f5a947;
+    --accent-dim:#8a6635;
+    --accent-2:#7fd8d3;
+    --text:#edeef2;
+    --text-dim:#9096ac;
+    --low:#e8735f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(245,169,71,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(127,216,211,0.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 60px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+  .eyebrow span{color:var(--accent);}
+  .app{
+    width:100%;
+    max-width:980px;
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:18px;
+  }
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr;}
+  }
+
+  /* ---------- Left dashboard ---------- */
+  .dash{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    height:fit-content;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand svg{width:26px;height:26px;flex-shrink:0;}
+  .brand-name{font-family:'Fraunces',serif; font-size:19px; font-weight:600;}
+  .brand-sub{font-size:11px; color:var(--text-dim); margin-top:1px;}
+
+  .lang-toggle{
+    display:flex; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:10px; padding:3px; gap:3px;
+  }
+  .lang-toggle button{
+    flex:1; padding:7px 0; border:none; border-radius:8px; background:transparent;
+    color:var(--text-dim); font-family:'Inter'; font-size:13px; font-weight:600; cursor:pointer;
+    transition:.15s;
+  }
+  .lang-toggle button.active{background:var(--accent); color:#1a1408;}
+
+  .section-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--text-dim); margin-bottom:10px;
+  }
+
+  /* confidence bulb gauge */
+  .gauge-wrap{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .bulb{width:66px; height:92px; position:relative;}
+  .bulb svg{width:100%; height:100%; display:block;}
+  #bulbFill{transition:.5s cubic-bezier(.4,0,.2,1);}
+  .gauge-pct{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:500;}
+  .gauge-intent{font-size:12px; color:var(--text-dim); text-align:center; min-height:16px;}
+
+  .checklist{display:flex; flex-direction:column; gap:8px;}
+  .check-item{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim);
+    transition:.25s;
+  }
+  .check-item .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--line); flex-shrink:0;
+    transition:.25s; box-shadow:none;
+  }
+  .check-item.done{color:var(--text);}
+  .check-item.done .dot{background:var(--accent-2); box-shadow:0 0 8px rgba(127,216,211,.7);}
+
+  .clear-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    font-family:'Inter'; font-size:12px; padding:8px; border-radius:9px; cursor:pointer;
+  }
+  .clear-btn:hover{border-color:var(--low); color:var(--low);}
+
+  /* ---------- Right chat panel ---------- */
+  .chat{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    display:flex;
+    flex-direction:column;
+    height:640px;
+    overflow:hidden;
+  }
+  .chat-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-2); box-shadow:0 0 6px var(--accent-2);}
+  .chat-head-text b{font-size:14px;}
+  .chat-head-text div{font-size:11.5px; color:var(--text-dim);}
+
+  .messages{
+    flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px;
+  }
+  .msg{max-width:78%; display:flex; flex-direction:column; gap:4px;}
+  .msg.bot{align-self:flex-start;}
+  .msg.user{align-self:flex-end; align-items:flex-end;}
+  .bubble{
+    padding:11px 14px; border-radius:14px; font-size:14px; line-height:1.5;
+  }
+  .msg.bot .bubble{background:var(--surface-2); border:1px solid var(--line); border-bottom-left-radius:4px;}
+  .msg.user .bubble{background:var(--accent); color:#1a1408; border-bottom-right-radius:4px; font-weight:500;}
+  .meta{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-dim); padding:0 4px;}
+
+  .typing{display:flex; gap:4px; padding:11px 14px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--text-dim); animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;} 40%{opacity:1;}}
+
+  .composer{
+    display:flex; gap:8px; padding:14px; border-top:1px solid var(--line); background:var(--surface);
+  }
+  .composer input[type=text]{
+    flex:1; background:var(--surface-2); border:1px solid var(--line); border-radius:11px;
+    padding:11px 14px; color:var(--text); font-family:'Inter'; font-size:14px; outline:none;
+  }
+  .composer input[type=text]:focus{border-color:var(--accent);}
+  .icon-btn{
+    width:42px; height:42px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:.15s;
+  }
+  .icon-btn:hover{border-color:var(--accent-2); color:var(--accent-2);}
+  .icon-btn.mic.listening{background:var(--low); border-color:var(--low); color:#fff; animation:pulse 1s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,115,95,.5);} 100%{box-shadow:0 0 0 10px rgba(232,115,95,0);}}
+  .send-btn{
+    background:var(--accent); border:none; color:#1a1408; font-weight:700; padding:0 18px;
+    border-radius:11px; cursor:pointer; font-family:'Inter'; font-size:14px;
+  }
+  .send-btn:hover{filter:brightness(1.08);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- LEFT: agent dashboard -->
+  <div class="dash">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7.5 2 4.5 5.2 4.5 9c0 2.8 1.6 4.5 2.8 5.9.8.9 1.2 1.6 1.2 2.6h7c0-1 .4-1.7 1.2-2.6 1.2-1.4 2.8-3.1 2.8-5.9C19.5 5.2 16.5 2 12 2Z" stroke="#F5A947" stroke-width="1.4"/><path d="M9.5 20.5h5M10 22.5h4" stroke="#F5A947" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <div>
+        <div class="brand-name">Loomlight</div>
+        <div class="brand-sub">Support Assistant — Lumi</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Language</div>
+      <div class="lang-toggle">
+        <button id="langEnBtn" class="active" onclick="setLang('en')">English</button>
+        <button id="langUrBtn" onclick="setLang('ur')">اردو</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Live confidence</div>
+      <div class="gauge-wrap">
+        <div class="bulb">
+          <svg viewBox="0 0 66 92">
+            <defs>
+              <clipPath id="bulbClip"><path d="M33 4C19 4 10 14 10 27c0 9 5 14.5 9 19 2.6 2.9 4 5 4 8.5h20c0-3.5 1.4-5.6 4-8.5 4-4.5 9-10 9-19 0-13-9-23-23-23Z"/></clipPath>
+              <linearGradient id="fillGrad" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stop-color="#e8735f"/>
+                <stop offset="55%" stop-color="#f5a947"/>
+                <stop offset="100%" stop-color="#7fd8d3"/>
+              </linearGradient>
+            </defs>
+            <path d="M33 4C19 4 10 14 10 27c0 9 5 14.5 9 19 2.6 2.9 4 5 4 8.5h20c0-3.5 1.4-5.6 4-8.5 4-4.5 9-10 9-19 0-13-9-23-23-23Z" fill="var(--surface-2)" stroke="var(--line)" stroke-width="1.2"/>
+            <g clip-path="url(#bulbClip)">
+              <rect id="bulbFill" x="0" y="92" width="66" height="0" fill="url(#fillGrad)"/>
+            </g>
+            <rect x="27" y="55" width="12" height="9" rx="1.5" fill="var(--surface)" stroke="var(--line)" stroke-width="1"/>
+            <line x1="24" y1="60" x2="42" y2="60" stroke="var(--line)" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="gauge-pct" id="gaugePct">—</div>
+        <div class="gauge-intent" id="gaugeIntent">awaiting first message</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Features demonstrated</div>
+      <div class="checklist" id="checklist">
+        <div class="check-item" data-key="nlu"><div class="dot"></div>Natural Language Understanding</div>
+        <div class="check-item" data-key="context"><div class="dot"></div>Context-Aware Responses</div>
+        <div class="check-item" data-key="kb"><div class="dot"></div>FAQ Knowledge Base</div>
+        <div class="check-item" data-key="history"><div class="dot"></div>Conversation History</div>
+        <div class="check-item" data-key="intent"><div class="dot"></div>Intent Recognition</div>
+        <div class="check-item" data-key="confidence"><div class="dot"></div>Confidence Score</div>
+        <div class="check-item" data-key="voice"><div class="dot"></div>Voice Input / Speech-to-Text</div>
+        <div class="check-item" data-key="tts"><div class="dot"></div>Text-to-Speech</div>
+        <div class="check-item" data-key="multilang"><div class="dot"></div>Multi-language Support</div>
+      </div>
+    </div>
+
+    <button class="clear-btn" onclick="clearHistory()">Clear conversation</button>
+  </div>
+
+  <!-- RIGHT: chat -->
+  <div class="chat">
+    <div class="chat-head">
+      <div class="status-dot"></div>
+      <div class="chat-head-text">
+        <b>Lumi · Loomlight Support</b>
+        <div id="headSub">Online — usually replies instantly</div>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="composer">
+      <input type="text" id="userInput" placeholder="Ask about orders, shipping, setup, returns..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="icon-btn mic" id="micBtn" onclick="toggleMic()" title="Voice input">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.6"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button class="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============ Knowledge base ============ */
+const KB = [
+  { id:'greeting', keywords:['hi','hello','hey','salam','assalam','asalam','good morning','good evening'],
+    en:"Hi, I'm Lumi 👋 I can help with orders, shipping, smart bulb setup, returns, warranty, or pricing. What do you need?",
+    ur:"سلام، میں لومی ہوں 👋 آرڈر، شپنگ، سیٹ اپ، ریٹرن، وارنٹی یا قیمت میں مدد کر سکتی ہوں۔ کیا مسئلہ ہے؟",
+    followUp:{en:"Anything else I can help you with?", ur:"کیا کسی اور چیز میں مدد چاہیے؟"} },
+
+  { id:'order_status', keywords:['order','track','tracking','where is my','status','shipment number','parcel'],
+    en:"You can track your order from the 'My Orders' section of the app — you'll need your order number, which was emailed at checkout. Want me to explain how to find it?",
+    ur:"آپ اپنا آرڈر ایپ کے 'My Orders' سیکشن سے ٹریک کر سکتے ہیں — اس کے لیے آرڈر نمبر درکار ہوگا جو چیک آؤٹ پر ای میل کیا گیا تھا۔",
+    followUp:{en:"Most orders update their tracking status within 24 hours of dispatch.", ur:"زیادہ تر آرڈرز کی ٹریکنگ ڈسپیچ کے 24 گھنٹوں میں اپڈیٹ ہو جاتی ہے۔"} },
+
+  { id:'shipping_time', keywords:['shipping','delivery','how long','deliver','arrive','eta','dispatch time'],
+    en:"Standard delivery takes 3–5 working days within major cities, and 5–8 days for other areas. Express delivery (1–2 days) is available at checkout for an extra fee.",
+    ur:"عام شپنگ بڑے شہروں میں 3 سے 5 دن اور دیگر علاقوں میں 5 سے 8 دن لیتی ہے۔ ایکسپریس ڈیلیوری (1-2 دن) چیک آؤٹ پر اضافی فیس کے ساتھ دستیاب ہے۔",
+    followUp:{en:"Delivery times can extend by 1–2 days during sales events.", ur:"سیل کے دوران ڈیلیوری میں 1-2 دن کی تاخیر ہو سکتی ہے۔"} },
+
+  { id:'returns_refunds', keywords:['return','refund','exchange','money back','cancel order','send back'],
+    en:"Items can be returned within 14 days of delivery if unused and in original packaging. Refunds are processed within 5–7 business days after we receive the item. Want the return steps?",
+    ur:"آئٹمز ڈیلیوری کے 14 دن کے اندر واپس کیے جا سکتے ہیں اگر وہ استعمال نہ ہوئے ہوں۔ ریفنڈ آئٹم موصول ہونے کے 5-7 دن میں ہو جاتا ہے۔",
+    followUp:{en:"Refunds go back to your original payment method automatically.", ur:"ریفنڈ خودکار طور پر اسی ادائیگی کے طریقے میں واپس آ جاتا ہے۔"} },
+
+  { id:'product_setup', keywords:['setup','set up','connect','wifi','pairing','pair','app','install','configure bulb'],
+    en:"To set up a Loomlight bulb: open the Loomlight app → tap '+' → select your bulb model → follow the Wi-Fi pairing steps (2.4GHz networks only). Stuck on a specific step?",
+    ur:"لومی بلب سیٹ اپ کرنے کے لیے: ایپ کھولیں → '+' دبائیں → اپنا بلب ماڈل منتخب کریں → وائی فائی پیئرنگ کے مراحل مکمل کریں (صرف 2.4GHz نیٹ ورک)۔",
+    followUp:{en:"If pairing fails, restart the bulb by power-cycling it 3 times.", ur:"اگر پیئرنگ ناکام ہو تو بلب کو 3 بار آن آف کریں۔"} },
+
+  { id:'warranty', keywords:['warranty','broken','not working','faulty','damaged','stopped working','defective'],
+    en:"All Loomlight products carry a 12-month warranty against manufacturing defects. If your item isn't working, share your order number and I'll start a warranty claim.",
+    ur:"تمام لومی پروڈکٹس پر 12 ماہ کی وارنٹی ہے۔ اگر آئٹم کام نہیں کر رہا تو آرڈر نمبر بتائیں، میں وارنٹی کلیم شروع کر دیتی ہوں۔",
+    followUp:{en:"Warranty doesn't cover accidental physical damage or water exposure.", ur:"وارنٹی حادثاتی نقصان یا پانی سے خرابی کو کور نہیں کرتی۔"} },
+
+  { id:'pricing', keywords:['price','cost','how much','discount','coupon','promo','sale'],
+    en:"Pricing varies by bulb model, starting around PKR 2,500 for a single smart bulb. Check the app's Offers tab — we run seasonal discounts and bundle deals.",
+    ur:"قیمت ماڈل کے مطابق مختلف ہوتی ہے، سنگل سمارٹ بلب تقریباً 2,500 روپے سے شروع ہوتا ہے۔ ایپ کے آفرز ٹیب میں سیزنل ڈسکاؤنٹ دیکھیں۔",
+    followUp:{en:"Bundle packs of 3+ bulbs usually save around 15%.", ur:"3 یا زیادہ بلب کے بنڈل پر تقریباً 15% بچت ہوتی ہے۔"} },
+
+  { id:'account', keywords:['password','login','log in','account','sign in','locked out','forgot'],
+    en:"To reset your password, tap 'Forgot Password' on the login screen and follow the link sent to your registered email. Need help with something else on your account?",
+    ur:"پاسورڈ ری سیٹ کرنے کے لیے لاگ ان اسکرین پر 'Forgot Password' دبائیں اور اپنی ای میل پر بھیجا گیا لنک استعمال کریں۔",
+    followUp:{en:"Reset links expire after 30 minutes for security.", ur:"سیکیورٹی وجوہات کی بنا پر ری سیٹ لنک 30 منٹ بعد ختم ہو جاتا ہے۔"} },
+
+  { id:'contact_human', keywords:['human','agent','representative','real person','talk to someone','support team'],
+    en:"Of course — I'll flag this chat for a human agent. Our support team typically responds within 2 hours during business hours (9am–9pm, Mon–Sat).",
+    ur:"ضرور — میں یہ چیٹ ہمارے سپورٹ ٹیم کو بھیج دیتی ہوں۔ ٹیم عام طور پر 2 گھنٹوں میں جواب دیتی ہے (صبح 9 سے رات 9، پیر تا ہفتہ)۔",
+    followUp:{en:"You'll get an email confirmation once an agent picks up your chat.", ur:"ایجنٹ کے چیٹ لینے پر آپ کو ای میل تصدیق مل جائے گی۔"} },
+
+  { id:'thanks', keywords:['thanks','thank you','shukriya','great','appreciate','ok thanks','bye','goodbye'],
+    en:"You're welcome! Happy to help anytime — just reopen this chat if anything else comes up.",
+    ur:"خوش آمدید! جب بھی ضرورت ہو، یہ چیٹ دوبارہ کھول لیں۔" }
+];
+
+const FALLBACK = {
+  en:"I'm not fully sure I follow — could you rephrase, or ask about orders, shipping, setup, returns, warranty, pricing, or your account?",
+  ur:"مجھے پوری طرح سمجھ نہیں آیا — براہ کرم دوبارہ بتائیں، یا آرڈر، شپنگ، سیٹ اپ، ریٹرن، وارنٹی یا قیمت کے بارے میں پوچھیں۔"
+};
+const CONTEXT_CUES = ['it','that','then','and what','how about','what about','also','more','why','when','how much','still'];
+const CONF_THRESHOLD = 28;
+
+/* ============ State ============ */
+let lang = 'en';
+let lastIntent = null;
+let history = [];
+let done = {};
+
+const els = {
+  messages: document.getElementById('messages'),
+  input: document.getElementById('userInput'),
+  gaugePct: document.getElementById('gaugePct'),
+  gaugeIntent: document.getElementById('gaugeIntent'),
+  bulbFill: document.getElementById('bulbFill'),
+  micBtn: document.getElementById('micBtn'),
+  headSub: document.getElementById('headSub')
+};
+
+/* ============ Persistence ============ */
+function loadHistory(){
+  try{
+    const raw = localStorage.getItem('loomlight_chat_history');
+    history = raw ? JSON.parse(raw) : [];
+  }catch(e){ history = []; }
+  if(history.length === 0){
+    pushMessage('bot', KB[0].en, {intent:'greeting', confidence:100}, false);
+  } else {
+    history.forEach(m => renderMessage(m));
+    mark('history');
+    scrollDown();
+  }
+}
+function saveHistory(){
+  localStorage.setItem('loomlight_chat_history', JSON.stringify(history));
+}
+function clearHistory(){
+  localStorage.removeItem('loomlight_chat_history');
+  history = [];
+  lastIntent = null;
+  els.messages.innerHTML = '';
+  pushMessage('bot', KB[0][lang], {intent:'greeting', confidence:100}, false);
+}
+
+/* ============ NLU: intent scoring ============ */
+function detectIntent(text){
+  const clean = text.toLowerCase().replace(/[^\w\s\u0600-\u06FF]/g,' ');
+  let best = null, bestScore = 0;
+
+  KB.forEach(intent=>{
+    let hits = 0;
+    intent.keywords.forEach(kw=>{
+      if(clean.includes(kw)) hits++;
+    });
+    if(hits > 0){
+      const score = Math.min(100, Math.round((hits / Math.min(2, intent.keywords.length)) * 60 + hits*10));
+      if(score > bestScore){ bestScore = score; best = intent; }
+    }
+  });
+
+  // context fallback: short message with a context cue, referring to last topic
+  if((!best || bestScore < CONF_THRESHOLD) && lastIntent){
+    const wordCount = clean.trim().split(/\s+/).length;
+    const hasCue = CONTEXT_CUES.some(c=>clean.includes(c));
+    if((hasCue || wordCount <= 4) && lastIntent.followUp){
+      return { intent: lastIntent, score: 62, viaContext: true };
+    }
+  }
+
+  if(!best || bestScore < CONF_THRESHOLD){
+    return { intent:null, score: best ? bestScore : 8, viaContext:false };
+  }
+  return { intent: best, score: bestScore, viaContext:false };
+}
+
+/* ============ Messaging ============ */
+function pushMessage(role, text, meta, persist=true){
+  const entry = { role, text, meta: meta||null, time: new Date().toISOString() };
+  renderMessage(entry);
+  if(persist){ history.push(entry); saveHistory(); }
+  scrollDown();
+}
+
+function renderMessage(entry){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + entry.role;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = entry.text;
+  wrap.appendChild(bubble);
+  if(entry.role === 'bot' && entry.meta){
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = `intent: ${entry.meta.intent} · confidence: ${entry.meta.confidence}%`;
+    wrap.appendChild(meta);
+  }
+  els.messages.appendChild(wrap);
+}
+
+function scrollDown(){ els.messages.scrollTop = els.messages.scrollHeight; }
+
+function showTyping(){
+  const t = document.createElement('div');
+  t.className = 'msg bot'; t.id = 'typingIndicator';
+  t.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+  els.messages.appendChild(t);
+  scrollDown();
+}
+function hideTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+/* ============ Send flow ============ */
+function sendMessage(){
+  const text = els.input.value.trim();
+  if(!text) return;
+  pushMessage('user', text);
+  els.input.value = '';
+  mark('nlu'); mark('history');
+
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    const result = detectIntent(text);
+    handleResult(text, result);
+  }, 500 + Math.random()*400);
+}
+
+function handleResult(text, result){
+  mark('intent'); mark('confidence');
+  let responseText, confidence, intentLabel;
+
+  if(result.intent){
+    mark('kb');
+    intentLabel = result.intent.id;
+    confidence = result.score;
+    if(result.viaContext){
+      mark('context');
+      responseText = result.intent.followUp[lang] || result.intent[lang];
+    } else {
+      responseText = result.intent[lang];
+    }
+    lastIntent = result.intent;
+  } else {
+    intentLabel = 'unmatched';
+    confidence = result.score;
+    responseText = FALLBACK[lang];
+  }
+
+  updateGauge(confidence, intentLabel);
+  pushMessage('bot', responseText, { intent: intentLabel, confidence });
+  speak(responseText);
+}
+
+/* ============ Gauge + checklist ============ */
+function updateGauge(pct, intentLabel){
+  els.gaugePct.textContent = pct + '%';
+  els.gaugeIntent.textContent = intentLabel;
+  const h = Math.max(4, Math.round((pct/100) * 84));
+  els.bulbFill.setAttribute('y', 88 - h);
+  els.bulbFill.setAttribute('height', h);
+}
+function mark(key){
+  if(done[key]) return;
+  done[key] = true;
+  const el = document.querySelector(`.check-item[data-key="${key}"]`);
+  if(el) el.classList.add('done');
+}
+
+/* ============ Language ============ */
+function setLang(l){
+  lang = l;
+  document.getElementById('langEnBtn').classList.toggle('active', l==='en');
+  document.getElementById('langUrBtn').classList.toggle('active', l==='ur');
+  document.getElementById('userInput').placeholder = l==='en'
+    ? "Ask about orders, shipping, setup, returns..."
+    : "آرڈر، شپنگ، سیٹ اپ، ریٹرن کے بارے میں پوچھیں...";
+  mark('multilang');
+}
+
+/* ============ Voice input ============ */
+let recognition = null, listening = false;
+function toggleMic(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    alert('Voice input is not supported in this browser. Try Chrome on desktop or Android.');
+    return;
+  }
+  if(listening){
+    recognition.stop();
+    return;
+  }
+  recognition = new SR();
+  recognition.lang = lang === 'ur' ? 'ur-PK' : 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = ()=>{
+    listening = true;
+    els.micBtn.classList.add('listening');
+    mark('voice');
+  };
+  recognition.onend = ()=>{
+    listening = false;
+    els.micBtn.classList.remove('listening');
+  };
+  recognition.onerror = ()=>{
+    listening = false;
+    els.micBtn.classList.remove('listening');
+  };
+  recognition.onresult = (event)=>{
+    const transcript = event.results[0][0].transcript;
+    els.input.value = transcript;
+    sendMessage();
+  };
+  recognition.start();
+}
+
+/* ============ Text-to-speech ============ */
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang === 'ur' ? 'ur-PK' : 'en-US';
+  utter.rate = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang === utter.lang) || voices.find(v => v.lang.startsWith(lang==='ur'?'ur':'en'));
+  if(match) utter.voice = match;
+  window.speechSynthesis.speak(utter);
+  mark('tts');
+}
+
+/* ============ Init ============ */
+window.addEventListener('load', ()=>{
+  loadHistory();
+  updateGauge(0, 'idle');
+  els.gaugePct.textContent = '—';
+  // warm up voices list (Chrome loads async)
+  if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); }
+});
+</script>
+</body>
+</html>
