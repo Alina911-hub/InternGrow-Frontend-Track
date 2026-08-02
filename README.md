@@ -3,7 +3,7 @@
 An AI-powered resume screening tool that automatically analyzes resumes, matches them against a job description, and ranks candidates — all running client-side in the browser, no backend required.
 
 ## 🚀 Live Demo
-👉 **[Try it live](https://alina911-hub.github.io/InternGrow_AI-powered-Resume-Screening-System/resume-screener.html)**
+👉 **[Try it live](https://alina911-hub.github.io/InternGrow-Frontend-Track/resume-screener.html)**
 
 ## ✨ Features
 
