@@ -2,7 +2,7 @@
 
 - **Task 1 — Resume Screening System:** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/resume-screener.html)
 - **Task 2 — AI Customer Support Chatbot:** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/task-2-chatbot/)
-- **Task 3 — Vision Bench (AI Image Classification):** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/task-3-vision-bench/)
+- **Task 3 — AI Image Classification :** [Live Demo](https://alina911-hub.github.io/InternGrow-Frontend-Track/task-3-vision-bench/)
 
 # InternGrow — Intelligent Resume Screening System
 
