@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision Bench — AI Image Classification System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E1A;
+    --surface:#121826;
+    --surface-2:#1A2236;
+    --border:#232C42;
+    --cyan:#3DDBC4;
+    --violet:#8B7FFF;
+    --amber:#FFB454;
+    --text:#EAF0FA;
+    --text-mid:#8996AD;
+    --text-faint:#5A6480;
+    --danger:#FF6B6B;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(61,219,196,0.08), transparent 60%),
+      radial-gradient(1000px 500px at 100% 10%, rgba(139,127,255,0.07), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  ::selection{background:rgba(61,219,196,0.3);}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 5vw 18px;
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap; gap:14px;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:38px; height:38px; border-radius:10px;
+    background:linear-gradient(135deg, var(--cyan), var(--violet));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk', sans-serif; font-weight:700; color:#0A0E1A; font-size:18px;
+    flex-shrink:0;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif; font-size:19px; font-weight:600; letter-spacing:-0.01em;
+  }
+  .brand span.sub{
+    display:block; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); margin-top:2px; letter-spacing:0.02em;
+  }
+  nav{display:flex; gap:6px; background:var(--surface); padding:5px; border-radius:12px; border:1px solid var(--border); flex-wrap:wrap;}
+  nav button{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:13.5px;
+    background:transparent; border:none; color:var(--text-mid);
+    padding:9px 16px; border-radius:9px; cursor:pointer; transition:all .18s ease;
+  }
+  nav button:hover{color:var(--text);}
+  nav button.active{background:var(--surface-2); color:var(--cyan); box-shadow:inset 0 0 0 1px var(--border);}
+
+  .status-pill{
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-mid);
+    display:flex; align-items:center; gap:7px; padding:7px 12px;
+    border:1px solid var(--border); border-radius:20px; background:var(--surface);
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--text-faint); transition:background .3s;}
+  .dot.ready{background:var(--cyan); box-shadow:0 0 8px var(--cyan);}
+  .dot.busy{background:var(--amber); animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  main{max-width:1180px; margin:0 auto; padding:34px 5vw 0;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  h2.section-title{
+    font-family:'Space Grotesk', sans-serif; font-size:22px; font-weight:600; margin-bottom:4px;
+  }
+  p.section-sub{color:var(--text-mid); font-size:14px; margin-bottom:24px;}
+
+  /* ---------- classify hero ---------- */
+  .classify-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:22px;}
+  @media(max-width:880px){.classify-grid{grid-template-columns:1fr;}}
+
+  .dropzone{
+    position:relative; border-radius:var(--radius);
+    border:1.5px dashed var(--border);
+    background:var(--surface);
+    min-height:420px; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; cursor:pointer; overflow:hidden;
+    transition:border-color .2s ease, background .2s ease;
+    text-align:center; padding:20px;
+  }
+  .dropzone.drag{border-color:var(--cyan); background:rgba(61,219,196,0.06);}
+  .dropzone .up-icon{
+    width:56px; height:56px; border-radius:50%; background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; border:1px solid var(--border);
+  }
+  .dropzone h3{font-family:'Space Grotesk', sans-serif; font-size:16px; font-weight:500;}
+  .dropzone p{color:var(--text-faint); font-size:12.5px; font-family:'JetBrains Mono', monospace;}
+  .dropzone input{display:none;}
+
+  .preview-wrap{position:relative; width:100%; height:100%; border-radius:var(--radius); overflow:hidden;}
+  .preview-wrap img{width:100%; height:100%; object-fit:cover; display:block; min-height:420px; max-height:480px;}
+  .scan-line{
+    position:absolute; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+    box-shadow:0 0 14px 2px var(--cyan);
+    top:0; opacity:0; pointer-events:none;
+  }
+  .scan-line.active{animation:scan 1.4s linear infinite; opacity:1;}
+  @keyframes scan{0%{top:0%;} 100%{top:100%;}}
+  .preview-overlay-btn{
+    position:absolute; top:12px; right:12px; background:rgba(10,14,26,0.75);
+    border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px;
+    font-size:12px; font-family:'Space Grotesk', sans-serif; cursor:pointer; backdrop-filter:blur(4px);
+  }
+
+  .results-panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; display:flex; flex-direction:column; gap:16px; min-height:420px;
+  }
+  .results-panel .placeholder{
+    flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-faint);
+    font-family:'JetBrains Mono', monospace; font-size:13px; text-align:center; line-height:1.6;
+  }
+  .compare-toggle{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding-bottom:14px; border-bottom:1px solid var(--border);
+  }
+  .compare-toggle label{font-size:12.5px; color:var(--text-mid); font-family:'JetBrains Mono', monospace;}
+  .switch{position:relative; width:38px; height:21px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider-tog{position:absolute; cursor:pointer; inset:0; background:var(--surface-2); border:1px solid var(--border); border-radius:20px; transition:.2s;}
+  .slider-tog:before{content:""; position:absolute; height:14px; width:14px; left:3px; top:3px; background:var(--text-faint); border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider-tog{background:rgba(61,219,196,0.18); border-color:var(--cyan);}
+  .switch input:checked + .slider-tog:before{transform:translateX(17px); background:var(--cyan);}
+
+  .pred-row{display:flex; flex-direction:column; gap:5px;}
+  .pred-row .top{display:flex; justify-content:space-between; align-items:baseline;}
+  .pred-row .label{font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:500; text-transform:capitalize;}
+  .pred-row .pct{font-family:'JetBrains Mono', monospace; font-size:12.5px; color:var(--cyan);}
+  .bar-track{height:7px; background:var(--surface-2); border-radius:6px; overflow:hidden; border:1px solid var(--border);}
+  .bar-fill{height:100%; border-radius:6px; background:linear-gradient(90deg, var(--violet), var(--cyan)); transition:width .6s cubic-bezier(.2,.8,.2,1);}
+
+  .feedback-row{display:flex; gap:8px; margin-top:6px; align-items:center;}
+  .feedback-row span{font-size:11.5px; color:var(--text-faint); font-family:'JetBrains Mono', monospace; margin-right:2px;}
+  .fb-btn{
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text-mid);
+    font-size:12px; padding:6px 12px; border-radius:8px; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:all .15s;
+  }
+  .fb-btn.correct.sel{background:rgba(61,219,196,0.15); border-color:var(--cyan); color:var(--cyan);}
+  .fb-btn.wrong.sel{background:rgba(255,107,107,0.12); border-color:var(--danger); color:var(--danger);}
+
+  .compare-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .compare-cols h4{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); margin-bottom:10px; letter-spacing:.03em; text-transform:uppercase;}
+
+  /* ---------- camera ---------- */
+  .camera-wrap{display:grid; grid-template-columns:1.1fr 1fr; gap:22px;}
+  @media(max-width:880px){.camera-wrap{grid-template-columns:1fr;}}
+  .cam-box{position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; min-height:420px; display:flex; align-items:center; justify-content:center;}
+  .cam-box video{width:100%; height:100%; object-fit:cover; display:block; min-height:420px;}
+  .cam-badge{position:absolute; top:12px; left:12px; background:rgba(10,14,26,0.7); border:1px solid var(--border); padding:5px 11px; border-radius:20px; font-family:'JetBrains Mono', monospace; font-size:11px; display:flex; align-items:center; gap:6px;}
+  .rec-dot{width:7px; height:7px; border-radius:50%; background:var(--danger); animation:pulse 1s infinite;}
+  .cam-controls{display:flex; gap:10px; margin-top:14px;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:'Space Grotesk', sans-serif; font-weight:500; font-size:13.5px;
+    border-radius:10px; padding:11px 20px; cursor:pointer; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); transition:all .15s ease;
+  }
+  .btn:hover{border-color:var(--cyan);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn.primary{background:linear-gradient(135deg, var(--cyan), #2bb8a6); color:#06141a; border:none; font-weight:600;}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn.violet{background:linear-gradient(135deg, var(--violet), #6f5fe0); color:#0c0a1f; border:none; font-weight:600;}
+  .btn.ghost{background:transparent;}
+  .btn.danger{border-color:var(--danger); color:var(--danger); background:transparent;}
+
+  /* ---------- custom training ---------- */
+  .train-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:880px){.train-grid{grid-template-columns:1fr;}}
+  .class-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:14px;}
+  .class-card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .class-card-head input[type=text]{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    font-family:'Space Grotesk', sans-serif; font-size:14px; padding:7px 10px; border-radius:8px; width:60%;
+  }
+  .thumb-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; min-height:56px;}
+  .thumb-row img{width:52px; height:52px; object-fit:cover; border-radius:7px; border:1px solid var(--border);}
+  .count-chip{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-mid); background:var(--surface-2); padding:3px 9px; border-radius:20px; border:1px solid var(--border);}
+
+  /* ---------- dashboard ---------- */
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px;}
+  @media(max-width:780px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+  .stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px;}
+  .stat-card .num{font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:700; color:var(--cyan);}
+  .stat-card .lbl{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-mid); margin-top:4px; letter-spacing:.02em;}
+
+  .dash-panels{display:grid; grid-template-columns:1.2fr 1fr; gap:20px;}
+  @media(max-width:880px){.dash-panels{grid-template-columns:1fr;}}
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px;}
+  .panel h4{font-family:'Space Grotesk', sans-serif; font-size:15px; margin-bottom:16px; font-weight:600;}
+
+  .cat-row{display:flex; align-items:center; gap:10px; margin-bottom:11px;}
+  .cat-row .cname{width:120px; font-size:12.5px; color:var(--text-mid); text-transform:capitalize; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:0;}
+  .cat-row .bar-track{flex:1;}
+  .cat-row .cval{font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--text-faint); width:24px; text-align:right;}
+
+  .eval-row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .eval-row:last-child{border-bottom:none;}
+  .eval-row .k{color:var(--text-mid);}
+  .eval-row .v{font-family:'JetBrains Mono', monospace; color:var(--text);}
+
+  /* ---------- history ---------- */
+  .hist-item{
+    display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:12px 16px; margin-bottom:10px;
+  }
+  .hist-item img{width:50px; height:50px; object-fit:cover; border-radius:8px; flex-shrink:0;}
+  .hist-info{flex:1; min-width:0;}
+  .hist-info .lbl{font-family:'Space Grotesk', sans-serif; font-size:14px; text-transform:capitalize;}
+  .hist-info .meta{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); margin-top:2px;}
+  .hist-conf{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--cyan); flex-shrink:0;}
+  .hist-tag{font-size:10.5px; padding:3px 9px; border-radius:20px; border:1px solid var(--border); flex-shrink:0; font-family:'JetBrains Mono', monospace;}
+  .hist-tag.ok{color:var(--cyan); border-color:var(--cyan);}
+  .hist-tag.bad{color:var(--danger); border-color:var(--danger);}
+  .empty-state{color:var(--text-faint); font-family:'JetBrains Mono', monospace; font-size:13px; text-align:center; padding:60px 0;}
+
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .search-input{
+    background:var(--surface); border:1px solid var(--border); color:var(--text);
+    padding:9px 14px; border-radius:9px; font-family:'JetBrains Mono', monospace; font-size:12.5px; width:220px;
+  }
+
+  footer{text-align:center; padding:34px 0 0; color:var(--text-faint); font-family:'JetBrains Mono', monospace; font-size:11px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">V</div>
+    <div>
+      <h1>Vision Bench</h1>
+      <span class="sub">AI IMAGE CLASSIFICATION SYSTEM</span>
+    </div>
+  </div>
+  <nav id="tabs">
+    <button data-view="classify" class="active">Classify</button>
+    <button data-view="camera">Live Camera</button>
+    <button data-view="train">Custom Training</button>
+    <button data-view="history">History</button>
+    <button data-view="dashboard">Dashboard</button>
+  </nav>
+  <div class="status-pill"><span class="dot" id="statusDot"></span><span id="statusText">Loading model…</span></div>
+</header>
+
+<main>
+
+  <!-- CLASSIFY -->
+  <section class="view active" id="view-classify">
+    <h2 class="section-title">Classify an image</h2>
+    <p class="section-sub">Drop an image or choose a file. Predictions run entirely in your browser using MobileNet.</p>
+    <div class="classify-grid">
+      <div id="dropzone" class="dropzone">
+        <div class="up-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3DDBC4" stroke-width="1.8"><path d="M12 16V4M12 4l-5 5M12 4l5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+        </div>
+        <h3>Drag & drop an image</h3>
+        <p>or click to browse · JPG, PNG, WEBP</p>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="results-panel">
+        <div class="compare-toggle">
+          <label>Compare two models (MobileNet v1 vs v2)</label>
+          <label class="switch"><input type="checkbox" id="compareToggle"><span class="slider-tog"></span></label>
+        </div>
+        <div id="resultsBody">
+          <div class="placeholder">Predictions will appear here once<br>an image is classified.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CAMERA -->
+  <section class="view" id="view-camera">
+    <h2 class="section-title">Real-time camera detection</h2>
+    <p class="section-sub">Classifies frames from your webcam continuously, live in the browser.</p>
+    <div class="camera-wrap">
+      <div class="cam-box">
+        <video id="camVideo" autoplay playsinline muted></video>
+        <div class="cam-badge" id="camBadge" style="display:none;"><span class="rec-dot"></span>LIVE</div>
+      </div>
+      <div class="results-panel">
+        <div id="camResultsBody">
+          <div class="placeholder">Start the camera to see<br>live predictions.</div>
+        </div>
+      </div>
+    </div>
+    <div class="cam-controls">
+      <button class="btn primary" id="camStartBtn">Start Camera</button>
+      <button class="btn danger" id="camStopBtn" disabled>Stop Camera</button>
+      <button class="btn ghost" id="camSnapBtn" disabled>Save Snapshot to History</button>
+    </div>
+  </section>
+
+  <!-- CUSTOM TRAINING -->
+  <section class="view" id="view-train">
+    <h2 class="section-title">Custom dataset training</h2>
+    <p class="section-sub">Add your own categories, capture a few example images per class from your webcam, then train a lightweight classifier on top of MobileNet's features (transfer learning via k-NN).</p>
+    <div class="train-grid">
+      <div>
+        <div id="classCards"></div>
+        <button class="btn ghost" id="addClassBtn" style="width:100%;">+ Add class</button>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="btn violet" id="trainBtn" style="flex:1;">Train Classifier</button>
+          <button class="btn ghost" id="resetTrainBtn">Reset</button>
+        </div>
+      </div>
+      <div>
+        <div class="cam-box" style="min-height:340px;">
+          <video id="trainVideo" autoplay playsinline muted></video>
+        </div>
+        <div class="cam-controls">
+          <button class="btn primary" id="trainCamStartBtn">Enable Camera</button>
+        </div>
+        <div class="panel" style="margin-top:16px;">
+          <h4>Prediction</h4>
+          <div id="customResult" class="placeholder" style="padding:20px 0;">Train the classifier, then hold an item up to the camera.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="view-history">
+    <h2 class="section-title">Classification history</h2>
+    <div class="toolbar">
+      <p class="section-sub" style="margin:0;">Every prediction made this session, most recent first.</p>
+      <div style="display:flex; gap:10px;">
+        <input class="search-input" id="historySearch" placeholder="Filter by label…">
+        <button class="btn ghost" id="clearHistBtn">Clear all</button>
+      </div>
+    </div>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <h2 class="section-title">Result dashboard</h2>
+    <p class="section-sub">Session-wide stats and model evaluation, computed from your feedback.</p>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">TOTAL CLASSIFICATIONS</div></div>
+      <div class="stat-card"><div class="num" id="statAvgConf">0%</div><div class="lbl">AVG. CONFIDENCE</div></div>
+      <div class="stat-card"><div class="num" id="statTopCat">—</div><div class="lbl">MOST FREQUENT CLASS</div></div>
+      <div class="stat-card"><div class="num" id="statAccuracy">—</div><div class="lbl">USER-VERIFIED ACCURACY</div></div>
+    </div>
+    <div class="dash-panels">
+      <div class="panel">
+        <h4>Category breakdown</h4>
+        <div id="catBreakdown"><div class="empty-state">No classifications yet.</div></div>
+      </div>
+      <div class="panel">
+        <h4>Model evaluation</h4>
+        <div class="eval-row"><span class="k">Model</span><span class="v" id="evalModel">MobileNet v2 (α 1.0)</span></div>
+        <div class="eval-row"><span class="k">Framework</span><span class="v">TensorFlow.js</span></div>
+        <div class="eval-row"><span class="k">Trained on</span><span class="v">ImageNet (1000 classes)</span></div>
+        <div class="eval-row"><span class="k">Reported top-1 accuracy</span><span class="v">~71.8%</span></div>
+        <div class="eval-row"><span class="k">Session predictions marked</span><span class="v" id="evalMarked">0</span></div>
+        <div class="eval-row"><span class="k">Session accuracy (user-verified)</span><span class="v" id="evalSessionAcc">—</span></div>
+        <div class="eval-row"><span class="k">Avg. inference time</span><span class="v" id="evalSpeed">—</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Vision Bench — runs fully client-side · no images leave your device</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.4/dist/knn-classifier.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- state ----------------
+  const state = {
+    modelV2:null, modelV1:null,
+    history:[], // {id, thumb, label, confidence, time, feedback, source}
+    camStream:null, camRunning:false, camLoopId:null,
+    trainStream:null,
+    classes:[], // {id, name, thumbs:[dataURLs], embeddings:[tensors count]}
+    knn:null,
+    lastInferenceMs:null,
+  };
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  // ---------------- tabs ----------------
+  $$('#tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('#tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      $$('.view').forEach(v=>v.classList.remove('active'));
+      $('#view-'+btn.dataset.view).classList.add('active');
+      if(btn.dataset.view !== 'camera') stopCamera();
+    });
+  });
+
+  // ---------------- model load ----------------
+  const statusDot = $('#statusDot'), statusText = $('#statusText');
+  async function loadModels(){
+    try{
+      state.modelV2 = await mobilenet.load({version:2, alpha:1.0});
+      statusText.textContent = 'Model ready';
+      statusDot.classList.add('ready');
+    }catch(e){
+      statusText.textContent = 'Model failed to load';
+      console.error(e);
+    }
+  }
+  async function ensureV1(){
+    if(!state.modelV1){
+      state.modelV1 = await mobilenet.load({version:1, alpha:1.0});
+    }
+    return state.modelV1;
+  }
+  loadModels();
+
+  function setBusy(busy){
+    statusDot.classList.toggle('busy', busy);
+    statusDot.classList.toggle('ready', !busy && !!state.modelV2);
+    statusText.textContent = busy ? 'Classifying…' : 'Model ready';
+  }
+
+  // ---------------- classify tab ----------------
+  const dropzone = $('#dropzone'), fileInput = $('#fileInput'), resultsBody = $('#resultsBody');
+  const compareToggle = $('#compareToggle');
+  let currentImgEl = null;
+
+  dropzone.addEventListener('click', ()=>fileInput.click());
+  dropzone.addEventListener('dragover', e=>{e.preventDefault(); dropzone.classList.add('drag');});
+  dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e=>{
+    e.preventDefault(); dropzone.classList.remove('drag');
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{
+    if(e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file){
+    if(!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      renderPreview(ev.target.result);
+      const img = new Image();
+      img.onload = ()=> runClassification(img, ev.target.result);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renderPreview(dataURL){
+    dropzone.innerHTML = `
+      <div class="preview-wrap">
+        <img id="previewImg" src="${dataURL}">
+        <div class="scan-line active" id="scanLine"></div>
+        <button class="preview-overlay-btn" id="changeImgBtn">Change image</button>
+      </div>`;
+    $('#changeImgBtn').addEventListener('click', e=>{
+      e.stopPropagation();
+      resetDropzone();
+    });
+    currentImgEl = $('#previewImg');
+  }
+
+  function resetDropzone(){
+    dropzone.innerHTML = `
+      <div class="up-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3DDBC4" stroke-width="1.8"><path d="M12 16V4M12 4l-5 5M12 4l5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+      </div>
+      <h3>Drag & drop an image</h3>
+      <p>or click to browse · JPG, PNG, WEBP</p>
+      <input type="file" id="fileInput" accept="image/*">`;
+    resultsBody.innerHTML = `<div class="placeholder">Predictions will appear here once<br>an image is classified.</div>`;
+    // rebind
+    Object.assign(window, {});
+    const newInput = $('#fileInput');
+    newInput.addEventListener('change', e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  }
+
+  async function runClassification(imgEl, thumbDataURL){
+    if(!state.modelV2) return;
+    setBusy(true);
+    const t0 = performance.now();
+    try{
+      if(compareToggle.checked){
+        const v1 = await ensureV1();
+        const [predsV2, predsV1] = await Promise.all([
+          state.modelV2.classify(imgEl, 5),
+          v1.classify(imgEl, 5)
+        ]);
+        state.lastInferenceMs = Math.round(performance.now()-t0);
+        renderCompareResults(predsV2, predsV1);
+        logHistory(predsV2[0], thumbDataURL, 'upload (v2)');
+      } else {
+        const preds = await state.modelV2.classify(imgEl, 5);
+        state.lastInferenceMs = Math.round(performance.now()-t0);
+        renderResults(preds, thumbDataURL);
+        logHistory(preds[0], thumbDataURL, 'upload');
+      }
+    }catch(err){
+      console.error(err);
+    }
+    setBusy(false);
+    const scanEl = $('#scanLine');
+    if(scanEl) scanEl.classList.remove('active');
+  }
+
+  function predRowHTML(p, idx, historyId){
+    const pct = (p.probability*100).toFixed(1);
+    return `
+      <div class="pred-row">
+        <div class="top"><span class="label">${idx===0?'🎯 ':''}${escapeHtml(p.className.split(',')[0])}</span><span class="pct">${pct}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+
+  function renderResults(preds, thumb){
+    const id = 'h'+Date.now();
+    resultsBody.innerHTML = preds.map((p,i)=>predRowHTML(p,i)).join('') +
+      `<div class="feedback-row" id="fbRow">
+        <span>Was this correct?</span>
+        <button class="fb-btn correct" data-id="${id}" data-val="correct">✓ Correct</button>
+        <button class="fb-btn wrong" data-id="${id}" data-val="wrong">✗ Wrong</button>
+      </div>`;
+    bindFeedback(id);
+    resultsBody.dataset.lastId = id;
+  }
+
+  function renderCompareResults(predsV2, predsV1){
+    resultsBody.innerHTML = `
+      <div class="compare-cols">
+        <div><h4>MobileNet v2</h4>${predsV2.map((p,i)=>predRowHTML(p,i)).join('')}</div>
+        <div><h4>MobileNet v1</h4>${predsV1.map((p,i)=>predRowHTML(p,i)).join('')}</div>
+      </div>
+      <p style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:12px;">
+        Top prediction agreement: ${predsV2[0].className.split(',')[0]===predsV1[0].className.split(',')[0] ? '<span style="color:var(--cyan)">match</span>' : '<span style="color:var(--amber)">differ</span>'}
+      </p>`;
+  }
+
+  function bindFeedback(id){
+    $$('.fb-btn').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const val = b.dataset.val;
+        $$(`.fb-btn[data-id="${id}"]`).forEach(x=>x.classList.remove('sel'));
+        b.classList.add('sel');
+        const entry = state.history.find(h=>h.id===id);
+        if(entry){ entry.feedback = val; renderDashboard(); renderHistory(); }
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------------- history ----------------
+  function logHistory(topPred, thumb, source){
+    const id = 'h'+Date.now()+Math.floor(Math.random()*1000);
+    state.history.unshift({
+      id, thumb, label:topPred.className.split(',')[0],
+      confidence:topPred.probability, time:new Date(), feedback:null, source
+    });
+    // sync the id used in the results panel feedback row
+    const fbRow = $('#fbRow');
+    if(fbRow){ $$('.fb-btn', fbRow).forEach(b=>b.dataset.id = id); bindFeedback(id); }
+    renderHistory();
+    renderDashboard();
+  }
+
+  function renderHistory(){
+    const list = $('#historyList');
+    const filter = ($('#historySearch').value||'').toLowerCase();
+    const items = state.history.filter(h=>h.label.toLowerCase().includes(filter));
+    if(items.length===0){
+      list.innerHTML = `<div class="empty-state">No classifications yet — try the Classify or Live Camera tab.</div>`;
+      return;
+    }
+    list.innerHTML = items.map(h=>`
+      <div class="hist-item">
+        <img src="${h.thumb}">
+        <div class="hist-info">
+          <div class="lbl">${escapeHtml(h.label)}</div>
+          <div class="meta">${h.source} · ${h.time.toLocaleTimeString()}</div>
+        </div>
+        <div class="hist-conf">${(h.confidence*100).toFixed(1)}%</div>
+        ${h.feedback ? `<span class="hist-tag ${h.feedback==='correct'?'ok':'bad'}">${h.feedback==='correct'?'verified':'flagged'}</span>` : ''}
+      </div>`).join('');
+  }
+  $('#historySearch').addEventListener('input', renderHistory);
+  $('#clearHistBtn').addEventListener('click', ()=>{
+    state.history = [];
+    renderHistory(); renderDashboard();
+  });
+
+  // ---------------- dashboard ----------------
+  function renderDashboard(){
+    const total = state.history.length;
+    $('#statTotal').textContent = total;
+    const avgConf = total ? (state.history.reduce((s,h)=>s+h.confidence,0)/total*100).toFixed(1)+'%' : '0%';
+    $('#statAvgConf').textContent = avgConf;
+
+    const freq = {};
+    state.history.forEach(h=>{ freq[h.label] = (freq[h.label]||0)+1; });
+    const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]);
+    $('#statTopCat').textContent = sorted.length ? sorted[0][0] : '—';
+
+    const marked = state.history.filter(h=>h.feedback);
+    const correct = marked.filter(h=>h.feedback==='correct').length;
+    $('#statAccuracy').textContent = marked.length ? Math.round(correct/marked.length*100)+'%' : '—';
+    $('#evalMarked').textContent = marked.length;
+    $('#evalSessionAcc').textContent = marked.length ? `${correct}/${marked.length} (${Math.round(correct/marked.length*100)}%)` : '—';
+    $('#evalSpeed').textContent = state.lastInferenceMs ? state.lastInferenceMs+' ms' : '—';
+
+    const catBreakdown = $('#catBreakdown');
+    if(sorted.length===0){
+      catBreakdown.innerHTML = `<div class="empty-state">No classifications yet.</div>`;
+    } else {
+      const max = sorted[0][1];
+      catBreakdown.innerHTML = sorted.slice(0,8).map(([name,count])=>`
+        <div class="cat-row">
+          <div class="cname">${escapeHtml(name)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(count/max*100)}%"></div></div>
+          <div class="cval">${count}</div>
+        </div>`).join('');
+    }
+  }
+
+  // ---------------- live camera ----------------
+  const camVideo = $('#camVideo'), camResultsBody = $('#camResultsBody');
+  const camStartBtn = $('#camStartBtn'), camStopBtn = $('#camStopBtn'), camSnapBtn = $('#camSnapBtn');
+  let lastCamPreds = null;
+
+  camStartBtn.addEventListener('click', startCamera);
+  camStopBtn.addEventListener('click', stopCamera);
+  camSnapBtn.addEventListener('click', ()=>{
+    if(!lastCamPreds) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = camVideo.videoWidth; canvas.height = camVideo.videoHeight;
+    canvas.getContext('2d').drawImage(camVideo,0,0);
+    logHistory(lastCamPreds[0], canvas.toDataURL('image/jpeg',0.7), 'live camera');
+  });
+
+  async function startCamera(){
+    try{
+      state.camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+      camVideo.srcObject = state.camStream;
+      $('#camBadge').style.display = 'flex';
+      camStartBtn.disabled = true; camStopBtn.disabled = false; camSnapBtn.disabled = false;
+      state.camRunning = true;
+      camLoop();
+    }catch(e){
+      camResultsBody.innerHTML = `<div class="placeholder">Camera access denied or unavailable.</div>`;
+    }
+  }
+  function stopCamera(){
+    state.camRunning = false;
+    if(state.camLoopId) clearTimeout(state.camLoopId);
+    if(state.camStream){ state.camStream.getTracks().forEach(t=>t.stop()); state.camStream = null; }
+    camVideo.srcObject = null;
+    $('#camBadge').style.display = 'none';
+    camStartBtn.disabled = false; camStopBtn.disabled = true; camSnapBtn.disabled = true;
+  }
+  async function camLoop(){
+    if(!state.camRunning || !state.modelV2) return;
+    try{
+      const preds = await state.modelV2.classify(camVideo, 5);
+      lastCamPreds = preds;
+      camResultsBody.innerHTML = preds.map((p,i)=>predRowHTML(p,i)).join('');
+    }catch(e){/* ignore transient frame errors */}
+    state.camLoopId = setTimeout(camLoop, 500);
+  }
+
+  // ---------------- custom training (KNN over MobileNet embeddings) ----------------
+  const classCards = $('#classCards'), addClassBtn = $('#addClassBtn');
+  const trainVideo = $('#trainVideo'), trainCamStartBtn = $('#trainCamStartBtn');
+  const trainBtn = $('#trainBtn'), resetTrainBtn = $('#resetTrainBtn'), customResult = $('#customResult');
+  let classCounter = 0;
+  let trainCamRunning = false, customLoopId = null;
+
+  function addClass(name){
+    classCounter++;
+    const id = 'c'+classCounter;
+    state.classes.push({id, name: name || ('Class '+classCounter), count:0});
+    renderClassCards();
+  }
+  addClassBtn.addEventListener('click', ()=>addClass());
+  addClass('Object A'); addClass('Object B');
+
+  function renderClassCards(){
+    classCards.innerHTML = state.classes.map(c=>`
+      <div class="class-card" data-id="${c.id}">
+        <div class="class-card-head">
+          <input type="text" value="${escapeHtml(c.name)}" data-role="name" data-id="${c.id}">
+          <span class="count-chip" data-count="${c.id}">${c.count} samples</span>
+        </div>
+        <div class="thumb-row" id="thumbs-${c.id}"></div>
+        <button class="btn ghost" data-role="capture" data-id="${c.id}" style="width:100%;" ${trainCamRunning?'':'disabled'}>Capture from camera</button>
+      </div>`).join('');
+    $$('input[data-role="name"]').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const c = state.classes.find(x=>x.id===inp.dataset.id);
+        if(c) c.name = inp.value;
+      });
+    });
+    $$('button[data-role="capture"]').forEach(btn=>{
+      btn.addEventListener('click', ()=>captureSample(btn.dataset.id));
+    });
+  }
+  renderClassCards();
+
+  trainCamStartBtn.addEventListener('click', async ()=>{
+    try{
+      state.trainStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+      trainVideo.srcObject = state.trainStream;
+      trainCamRunning = true;
+      trainCamStartBtn.textContent = 'Camera enabled';
+      trainCamStartBtn.disabled = true;
+      renderClassCards();
+    }catch(e){
+      customResult.textContent = 'Camera access denied.';
+    }
+  });
+
+  async function captureSample(classId){
+    if(!state.modelV2 || !trainCamRunning) return;
+    const cls = state.classes.find(c=>c.id===classId);
+    if(!cls) return;
+    if(!state.knn) state.knn = knnClassifier.create();
+    const activation = state.modelV2.infer(trainVideo, true);
+    state.knn.addExample(activation, cls.name);
+    activation.dispose();
+    cls.count++;
+    const canvas = document.createElement('canvas');
+    canvas.width = 100; canvas.height = 100;
+    canvas.getContext('2d').drawImage(trainVideo, 0,0,100,100);
+    const thumbRow = $('#thumbs-'+classId);
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL('image/jpeg',0.6);
+    thumbRow.appendChild(img);
+    $(`span[data-count="${classId}"]`).textContent = cls.count+' samples';
+  }
+
+  trainBtn.addEventListener('click', ()=>{
+    if(!state.knn || state.knn.getNumClasses()===0){
+      customResult.innerHTML = `<div class="placeholder">Capture at least a few samples per class first.</div>`;
+      return;
+    }
+    customResult.innerHTML = `<div class="placeholder" style="color:var(--cyan);">Classifier trained on ${state.knn.getNumClasses()} class(es). Hold an item up to the camera — predictions update live below.</div>`;
+    if(!customLoopId) customPredictLoop();
+  });
+
+  async function customPredictLoop(){
+    if(state.knn && state.knn.getNumClasses()>0 && trainCamRunning){
+      try{
+        const activation = state.modelV2.infer(trainVideo, true);
+        const res = await state.knn.predictClass(activation);
+        activation.dispose();
+        const confPct = (res.confidences[res.label]*100).toFixed(0);
+        customResult.innerHTML = `
+          <div style="width:100%;">
+            <div class="pred-row">
+              <div class="top"><span class="label">🎯 ${escapeHtml(res.label)}</span><span class="pct">${confPct}%</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${confPct}%"></div></div>
+            </div>
+          </div>`;
+      }catch(e){/* ignore */}
+    }
+    customLoopId = setTimeout(customPredictLoop, 600);
+  }
+
+  resetTrainBtn.addEventListener('click', ()=>{
+    state.classes = []; classCounter = 0;
+    state.knn = null;
+    if(customLoopId){ clearTimeout(customLoopId); customLoopId=null; }
+    addClass('Object A'); addClass('Object B');
+    customResult.innerHTML = `<div class="placeholder">Train the classifier, then hold an item up to the camera.</div>`;
+  });
+
+  // ---------------- init ----------------
+  renderHistory();
+  renderDashboard();
+})();
+</script>
+</body>
+</html>
